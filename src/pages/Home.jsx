@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { BsSend, BsThreeDotsVertical } from "react-icons/bs";
 import { BiLogOut } from "react-icons/bi";
 import { AiOutlineUserAdd, AiOutlineUsergroupAdd } from "react-icons/ai";
@@ -40,6 +40,8 @@ const Home = () => {
   const [typing, setTyping] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
 
+  const typingRef = useRef();
+
   const navigate = useNavigate();
 
   const {
@@ -66,7 +68,8 @@ const Home = () => {
     socket.emit("join_room", id);
   };
 
-  const handleSendMessage = async () => {
+  const handleSendMessage = async (e) => {
+    e.preventDefault();
     if (currentMessage !== "") {
       await dispatch(sendMessage(currentMessage, selectedConversation._id));
 
@@ -79,6 +82,11 @@ const Home = () => {
       socket.emit("stop_typing", selectedConversation._id);
       setCurrentMessage("");
     }
+    typingRef?.current.scrollIntoView({
+      behaviour: "smooth",
+      block: "nearest",
+      inline: "start",
+    });
   };
 
   useEffect(() => {
@@ -228,8 +236,8 @@ const Home = () => {
                   onClick={() => setOpenUserList(true)}
                 />
               </div>
-              {/* <div className="flex flex-col gap-1 py-24 h-[80vh] px-6 overflow-y-auto"> */}
-              <ScrollableFeed className="flex flex-col gap-1 py-24 px-6 h-[80vh]">
+              <div className="flex flex-col gap-1 py-24 h-[90vh] px-6 overflow-y-auto ">
+                {/* <ScrollableFeed className="flex flex-col gap-1 py-24 px-6 h-[80vh]"> */}
                 {selectedConversation?.messages?.length > 0 &&
                   selectedConversation.messages.map((message) => (
                     <Message key={message._id} message={message} />
@@ -237,39 +245,38 @@ const Home = () => {
                 <p className="text-xs text-gray-400 text-center mt-2">
                   {seenList?.length > 0 && `Seen by ${seenList}`}
                 </p>
-              </ScrollableFeed>
-              {/* <Lottie
-                style={{
-                  height: "100px",
-                  float: "left",
-                }}
-                animationData={typingAnimation}
-              /> */}
-              {isTyping ? (
-                <Lottie
-                  style={{
-                    height: "100px",
-                    float: "left",
-                  }}
-                  animationData={typingAnimation}
-                />
-              ) : (
-                <></>
-              )}
-
-              {/* </div> */}
-              <div className="p-5 absolute bottom-0 w-full flex gap-1 items-center">
-                <input
-                  value={currentMessage}
-                  onChange={typingHandler}
-                  className="w-full rounded-md border border-[#e0e0e0] bg-white py-3 px-6 text-base font-medium text-[#6B7280] outline-none focus:border-blue-500 focus:shadow-md"
-                />
-                <button
-                  onClick={handleSendMessage}
-                  className="hover:bg-blue-600 rounded-md bg-blue-500 p-3 text-center text-base font-semibold text-white outline-none"
+                {/* </ScrollableFeed> */}
+                <div ref={typingRef} className="">
+                  {isTyping ? (
+                    <Lottie
+                      style={{
+                        height: "100px",
+                        float: "left",
+                      }}
+                      animationData={typingAnimation}
+                    />
+                  ) : (
+                    <></>
+                  )}
+                </div>
+              </div>
+              <div>
+                <form
+                  className="p-5 absolute bottom-0 w-full flex gap-1 items-center"
+                  onSubmit={handleSendMessage}
                 >
-                  <BsSend size={24} />
-                </button>
+                  <input
+                    value={currentMessage}
+                    onChange={typingHandler}
+                    className="w-full rounded-md border border-[#e0e0e0] bg-white py-3 px-6 text-base font-medium text-[#6B7280] outline-none focus:border-blue-500 focus:shadow-md"
+                  />
+                  <button
+                    type="submit"
+                    className="hover:bg-blue-600 rounded-md bg-blue-500 p-3 text-center text-base font-semibold text-white outline-none"
+                  >
+                    <BsSend size={24} />
+                  </button>
+                </form>
               </div>
             </>
           )}
