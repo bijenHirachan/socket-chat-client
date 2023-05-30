@@ -1,5 +1,6 @@
 import axios from "axios";
 import { server } from "../../main";
+import { socket } from "../../socket";
 
 export const getConversations = () => async (dispatch) => {
   try {
@@ -115,6 +116,7 @@ export const sendMessage =
           withCredentials: true,
         }
       );
+      socket.emit("send_message", data.sentMessage);
       dispatch({ type: "sendMessageSuccess", payload: data });
     } catch (error) {
       dispatch({

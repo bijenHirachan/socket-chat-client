@@ -9,9 +9,9 @@ import { loadUser } from "./redux/actions/userActions";
 import { Toaster } from "react-hot-toast";
 
 function App() {
-  const [message, setMessage] = useState("");
-  const [room, setRoom] = useState("");
-  const [messageReceived, setMessageReceived] = useState("");
+  // const [message, setMessage] = useState("");
+  // const [room, setRoom] = useState("");
+  // const [messageReceived, setMessageReceived] = useState("");
 
   const dispatch = useDispatch();
 
@@ -22,9 +22,9 @@ function App() {
     message: userMessage,
   } = useSelector((state) => state.user);
 
-  const sendMessage = () => {
-    socket.emit("send_message", { message, room });
-  };
+  // const sendMessage = () => {
+  //   socket.emit("send_message", { message, room });
+  // };
 
   useEffect(() => {
     socket.connect();

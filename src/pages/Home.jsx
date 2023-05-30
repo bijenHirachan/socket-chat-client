@@ -19,11 +19,17 @@ import Conversation, { otherUser } from "../components/Conversation";
 import SelectOneUser from "../components/SelectOneUser";
 import { socket } from "../socket";
 import ScrollableFeed from "react-scrollable-feed";
+import Lottie from "lottie-react";
+import typingAnimation from "../animations/typing.json";
 
 const Home = () => {
   const [open, setOpen] = useState(false);
 
   const [openOneUser, setOpenOneUser] = useState(false);
+
+  const [socketConnected, setSocketConnected] = useState(false);
+
+  const [conversationSelected, setConversationSelected] = useState("");
 
   const [openUserList, setOpenUserList] = useState(false);
 
@@ -31,12 +37,16 @@ const Home = () => {
 
   const { loading, users, user } = useSelector((state) => state.user);
 
+  const [typing, setTyping] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
+
   const navigate = useNavigate();
 
   const {
     loading: conversationLoading,
     conversations,
     selectedConversation,
+    notification,
   } = useSelector((state) => state.conversation);
 
   const seenList =
@@ -44,13 +54,14 @@ const Home = () => {
       ? selectedConversation?.messages[
           selectedConversation.messages.length - 1
         ].seenUsers
-          .filter((u) => u._id !== user._id)
+          .filter((u) => u._id !== user?._id)
           .map((user) => user.name)
       : [];
 
   const dispatch = useDispatch();
 
   const selectConversation = (id) => {
+    // setConversationSelected(id);
     dispatch(getSingleConversation(id));
     socket.emit("join_room", id);
   };
@@ -59,11 +70,13 @@ const Home = () => {
     if (currentMessage !== "") {
       await dispatch(sendMessage(currentMessage, selectedConversation._id));
 
-      socket.emit("send_message", {
-        conversationId: selectedConversation._id,
-        message: currentMessage,
-        userId: user._id,
-      });
+      // socket.emit("send_message", {
+      //   conversationId: selectedConversation._id,
+      //   message: currentMessage,
+      //   userId: user._id,
+      //   users: selectedConversation.users,
+      // });
+      socket.emit("stop_typing", selectedConversation._id);
       setCurrentMessage("");
     }
   };
@@ -85,16 +98,49 @@ const Home = () => {
   };
 
   useEffect(() => {
-    socket.on("receive_message", async (data) => {
-      await dispatch(getSingleConversation(data.conversationId));
-    });
-  }, [socket]);
+    socket.on("connected", () => setSocketConnected(true));
 
-  // useEffect(() => {
-  //   if (selectedConversation) {
-  //     dispatch(getSingleConversation(selectedConversation._id));
-  //   }
-  // }, [selectedConversation]);
+    socket.on("receive_message", (data) => {
+      dispatch(getSingleConversation(data.conversation._id));
+    });
+
+    socket.on("typing", () => setIsTyping(true));
+    socket.on("stop_typing", () => setIsTyping(false));
+  }, [socket, selectedConversation?._id]);
+
+  useEffect(() => {
+    if (user) {
+      socket.emit("setup", user);
+    }
+  }, []);
+
+  const typingHandler = (e) => {
+    setCurrentMessage(e.target.value);
+
+    if (!socketConnected) return;
+
+    if (e.target.value !== "") {
+      //typing indicator logic
+      if (!typing) {
+        setTyping(true);
+        socket.emit("typing", selectedConversation._id);
+      }
+
+      let lastTypingTime = new Date().getTime();
+
+      var timerLength = 3000;
+
+      setTimeout(() => {
+        var timeNow = new Date().getTime();
+        var timeDiff = timeNow - lastTypingTime;
+
+        if (timeDiff >= timerLength && typing) {
+          socket.emit("stop_typing", selectedConversation._id);
+          setTyping(false);
+        }
+      }, timerLength);
+    }
+  };
 
   return (
     <>
@@ -120,6 +166,14 @@ const Home = () => {
       </Modal>
       <div className="h-screen bg-white grid grid-cols-12 gap-4 p-4">
         <div className="col-span-3 rounded border">
+          <div className="p-3 border m-1 rounded flex items-center justify-between">
+            <div>
+              <h3 className="font-semibold text-gray-500 text-lg">
+                {user?.name}
+              </h3>
+              <p className="text-sm text-gray-400">{user?.email}</p>
+            </div>
+          </div>
           <div className="p-3 grid grid-cols-3 gap-1 ">
             <button
               onClick={logoutHandler}
@@ -184,12 +238,30 @@ const Home = () => {
                   {seenList?.length > 0 && `Seen by ${seenList}`}
                 </p>
               </ScrollableFeed>
+              {/* <Lottie
+                style={{
+                  height: "100px",
+                  float: "left",
+                }}
+                animationData={typingAnimation}
+              /> */}
+              {isTyping ? (
+                <Lottie
+                  style={{
+                    height: "100px",
+                    float: "left",
+                  }}
+                  animationData={typingAnimation}
+                />
+              ) : (
+                <></>
+              )}
 
               {/* </div> */}
               <div className="p-5 absolute bottom-0 w-full flex gap-1 items-center">
                 <input
                   value={currentMessage}
-                  onChange={(e) => setCurrentMessage(e.target.value)}
+                  onChange={typingHandler}
                   className="w-full rounded-md border border-[#e0e0e0] bg-white py-3 px-6 text-base font-medium text-[#6B7280] outline-none focus:border-blue-500 focus:shadow-md"
                 />
                 <button
