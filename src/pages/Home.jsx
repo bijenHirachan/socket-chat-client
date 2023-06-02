@@ -174,6 +174,11 @@ const Home = () => {
       </Modal>
       <div className="h-screen bg-white grid grid-cols-12 gap-4 p-4">
         <div className="col-span-3 rounded border">
+          <div className="border m-1 rounded flex items-center justify-between">
+            <div className="p-3 bg-slate-600">
+              <img src="./images/letschat.png" alt="" />
+            </div>
+          </div>
           <div className="p-3 border m-1 rounded flex items-center justify-between">
             <div>
               <h3 className="font-semibold text-gray-500 text-lg">
